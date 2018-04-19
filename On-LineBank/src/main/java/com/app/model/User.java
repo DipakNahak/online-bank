@@ -1,6 +1,10 @@
 package com.app.model;
 
+import java.net.URI;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -12,14 +16,23 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.app.model.security.Authority;
+import com.app.model.security.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author Dipak
  *
  */
+/**
+ * @author Dipak
+ *
+ */
 @Entity
-public class User {
+public class User implements UserDetails {
 	@Id
 	@GeneratedValue(strategy=GenerationType.AUTO)
 	@Column(name="userId",nullable=false,updatable=false)
@@ -44,8 +57,21 @@ public class User {
 	private List<Appointment> appointmentList;
 	
 	@OneToMany(mappedBy="user",cascade=CascadeType.ALL,fetch=FetchType.LAZY)
-	 
 	private List<Recipient> recipientList;
+	
+	@OneToMany(mappedBy="user",cascade=CascadeType.ALL,fetch=FetchType.EAGER)
+	@JsonIgnore
+	private Set<UserRole> userRole=new HashSet<>();
+	
+	
+	
+	public Set<UserRole> getUserRole() {
+		return userRole;
+	}
+
+	public void setUserRole(Set<UserRole> userRole) {
+		this.userRole = userRole;
+	}
 
 	public Long getUserId() {
 		return userId;
@@ -143,12 +169,46 @@ public class User {
 		this.recipientList = recipientList;
 	}
 
+	
+
 	@Override
 	public String toString() {
 		return "User [userId=" + userId + ", username=" + username + ", password=" + password + ", firstName="
 				+ firstName + ", lastName=" + lastName + ", email=" + email + ", phone=" + phone + ", enable=" + enable
 				+ ", currentAccount=" + currentAccount + ", savingAccount=" + savingAccount + ", appointmentList="
-				+ appointmentList + ", recipientList=" + recipientList + "]";
+				+ appointmentList + ", recipientList=" + recipientList + ", userRole=" + userRole + "]";
+	}
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		// TODO Auto-generated method stub
+		Set<GrantedAuthority> authorities=new HashSet<>();
+		userRole.forEach(ur -> authorities.add(new Authority(ur.getRole().getName())));
+		return authorities;
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		// TODO Auto-generated method stub
+		return enable;
 	}
 
 	
