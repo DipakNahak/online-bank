@@ -1,5 +1,6 @@
 package com.app.controller;
 
+import java.security.Principal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.app.dao.RoleDao;
+import com.app.model.CurrentAccount;
+import com.app.model.SavingAccount;
 import com.app.model.User;
 import com.app.model.security.UserRole;
 import com.app.service.UserService;
@@ -51,9 +54,17 @@ public class HomeController {
 
             userService.createUser(user, userRoles);
 			
+            return "redirect:/";
 		}
+	}
+	@RequestMapping("/on-LineBank") 
+	public String onLineBank(Principal principal,Model model){
+		User user=userService.findByUsername(principal.getName());
+		CurrentAccount currentAccount=user.getCurrentAccount();
+		SavingAccount savingAccount=user.getSavingAccount();
 		
-		return "redirect:/";
-	 
+		model.addAttribute("currentAccount", currentAccount);
+		model.addAttribute("savingAccount", savingAccount);
+		return "on-LineBank";
 	}
 }

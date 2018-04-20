@@ -1,6 +1,8 @@
 package com.app.service.impl;
 
 import java.math.BigDecimal;
+import java.security.Principal;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,8 +10,12 @@ import org.springframework.stereotype.Service;
 import com.app.dao.CurrentAccountDao;
 import com.app.dao.SavingAccountDao;
 import com.app.model.CurrentAccount;
+import com.app.model.CurrentTransaction;
 import com.app.model.SavingAccount;
+import com.app.model.SavingTransaction;
+import com.app.model.User;
 import com.app.service.AccountService;
+import com.app.service.TransactionService;
 import com.app.service.UserService;
 
 @Service
@@ -19,12 +25,21 @@ public class AccountServiceImpl implements AccountService {
 	
 	@Autowired
 	private CurrentAccountDao	currentAccountdao;
+	 
+	@Autowired
+	private SavingAccountDao savingAccountdao; 
 	
 	@Autowired
-	private SavingAccountDao savingAccountdao;
-	
-	@Autowired
-	private UserService uerService;
+    private CurrentAccountDao currentAccountDao;
+
+    @Autowired
+    private SavingAccountDao savingAccountDao;
+
+    @Autowired
+    private UserService userService;
+    
+    @Autowired
+    private TransactionService transactionService;
 	
 	@Override
 	public CurrentAccount createCurrentAccount() {
@@ -47,6 +62,52 @@ public class AccountServiceImpl implements AccountService {
 		
 		return savingAccountdao.findByAccountNumber(savingAccount.getAccountNumber());
 	}
+	 public void deposit(String accountType, double amount, Principal principal) {
+	        User user = userService.findByUsername(principal.getName());
+
+	        if (accountType.equalsIgnoreCase("Current")) {
+	            CurrentAccount currentAccount = user.getCurrentAccount();
+	            currentAccount.setAccountBalance(currentAccount.getAccountBalance().add(new BigDecimal(amount)));
+	            currentAccountDao.save(currentAccount);
+
+	            Date date = new Date();
+
+	            CurrentTransaction currentTransaction = new CurrentTransaction(date, "Deposit to Current Account", "Account", "Finished", amount, currentAccount.getAccountBalance(), currentAccount);
+	            transactionService.saveCurrentDepositTransaction(currentTransaction);
+	            
+	        } else if (accountType.equalsIgnoreCase("Saving")) {
+	            SavingAccount savingAccount = user.getSavingAccount();
+	            savingAccount.setAccountBalance(savingAccount.getAccountBalance().add(new BigDecimal(amount)));
+	            savingAccountDao.save(savingAccount);
+
+	            Date date = new Date();
+	            SavingTransaction savingTransaction = new SavingTransaction(date, "Deposit to saving Account", "Account", "Finished", amount, savingAccount.getAccountBalance(), savingAccount);
+	            transactionService.saveSavingDepositTransaction(savingTransaction);
+	        }
+	    }
+	    
+	    public void withdraw(String accountType, double amount, Principal principal) {
+	        User user = userService.findByUsername(principal.getName());
+
+	        if (accountType.equalsIgnoreCase("Current")) {
+	        	CurrentAccount currentAccount = user.getCurrentAccount();
+	        	currentAccount.setAccountBalance(currentAccount.getAccountBalance().subtract(new BigDecimal(amount)));
+	        	currentAccountDao.save(currentAccount);
+
+	            Date date = new Date();
+
+	            CurrentTransaction currentTransaction = new CurrentTransaction(date, "Withdraw from Current Account", "Account", "Finished", amount, currentAccount.getAccountBalance(), currentAccount);
+	            transactionService.saveCurrentWithdrawTransaction(currentTransaction);
+	        } else if (accountType.equalsIgnoreCase("Saving")) {
+	            SavingAccount savingAccount = user.getSavingAccount();
+	            savingAccount.setAccountBalance(savingAccount.getAccountBalance().subtract(new BigDecimal(amount)));
+	            savingAccountDao.save(savingAccount);
+
+	            Date date = new Date();
+	            SavingTransaction savingTransaction = new SavingTransaction(date, "Withdraw from saving Account", "Account", "Finished", amount, savingAccount.getAccountBalance(), savingAccount);
+	            transactionService.saveSavingWithdrawTransaction(savingTransaction);
+	        }
+	    }
 	
 	private int accountGen(){
 		
